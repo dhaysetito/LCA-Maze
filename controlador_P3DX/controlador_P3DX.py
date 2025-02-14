@@ -5,32 +5,13 @@ import networkx as nx
 import numpy as np
 
 
-
-MAZE = np.array([[0,0,0],
-                 [0,0,0],
-                 [0,0,0]])
-
-position = [2 ,2 ,'E']
+MAZE = np.array(np.zeros((15, 15)))
+position = [7 ,7 ,'E']
 
 def set_speed(left, right):
     left_motor.setVelocity(left)
     right_motor.setVelocity(right)
 
-def move_forward():
-    set_speed(1.2, 1.2)
-    robot.step(timestep)
-    set_speed(0, 0)
-
-def turn_left():
-    set_speed(-1.2, 1.2)
-    robot.step(timestep)
-    set_speed(0, 0)
-
-def turn_right():
-    set_speed(1.2, -1.2)
-    robot.step(timestep)
-    set_speed(0, 0)
- 
 def rotate(angle):
 
     angular_speed = 0.5908 
@@ -78,7 +59,7 @@ def probe_for_walls():
         probe = probe_direction()
 
         # Determinar se há uma parede à frente (critério ajustável conforme o sensor)
-        if probe[3] > 940 and probe[4] > 940:
+        if probe[3] > 930 and probe[4] > 930:
             wall_detection[current_dir_index] = 1  # Parede detectada
 
         # Atualizar a direção atual
@@ -91,6 +72,31 @@ def probe_for_walls():
     rotate(-90 * (current_dir_index - directions.index(position[2])) + 2.3)  #2 é o erro
     return wall_detection
 
+# ---------------------------------------------------------------------------------------x
+
+def update_maze(position=position, maze=MAZE):
+    """
+    Atualiza a matriz do labirinto com as informações de parede obtidas.
+    """
+    # Atualiza a matriz do labirinto com as informações de parede
+    directions = ['N', 'E', 'S', 'W']
+    walls = probe_for_walls()
+    print(walls)
+    for i in range(4):
+        if walls[i] == 1:
+            if directions[i] == 'N':
+                maze[position[0] - 1][position[1]] = 1
+            if directions[i] == 'E':
+                maze[position[0]][position[1] + 1] = 1
+            if directions[i] == 'S':
+                maze[position[0] + 1][position[1]] = 1
+            if directions[i] == 'W':
+                maze[position[0]][position[1] - 1] = 1
+
+    global MAZE
+    MAZE = maze
+    print(MAZE)
+
 def move_on_edge(direction, maze=MAZE):
     """
     Move o robô 2 metros na direção especificada (N, S, E ou W).
@@ -99,19 +105,20 @@ def move_on_edge(direction, maze=MAZE):
     directions = ['N', 'E', 'S', 'W']
     current_dir_index = directions.index(direction) # direção de movimento desejada
     translation_time = 10.26227291 # Tempo necessário para percorrer 2 metros (distanciaDeUmPasso_emmetros/velocidade_linear)
+   
 
     rotate(-90 * (current_dir_index - directions.index(position[2])))
     position[2] = direction
 
     #atualiza a posição do robô
     if direction == 'N':
-        position[0] -= 1
+        position[0] -= 2
     elif direction == 'E':
-        position[1] += 1
+        position[1] += 2
     elif direction == 'S':
-        position[0] += 1
+        position[0] += 2
     elif direction == 'W':
-        position[1] -= 1
+        position[1] -= 2
     
     # Movimentar para frente
     start_time = robot.getTime()
@@ -121,51 +128,7 @@ def move_on_edge(direction, maze=MAZE):
 
     # Parar o robô
     set_speed(0, 0)
-
-    #situações de borda
-    limit_directions = [0, 0, 0, 0]
-    limit = True
-    #testar se existem limites em alguma direção
-    try:
-        if maze[position[0]+1, position[1]] == 0 or 1:
-            pass
-    except IndexError:
-        limit = False
-        limit_directions[0] = 1
-    try:
-        if maze[position[0], position[1]+1] == 0 or 1:
-            pass
-    except IndexError:
-        limit = False
-        limit_directions[1] = 1
-    try:
-        if maze[position[0]-1, position[1]] == 0 or 1:
-            pass
-    except IndexError:
-        limit = False
-        limit_directions[2] = 1
-    try:
-        if maze[position[0], position[1]-1] == 0 or 1:
-            pass
-    except IndexError:
-        limit = False
-        limit_directions[3] = 1
-       
-    #adicionar novos limites caso não existam
-    if limit == False:
-        for i in range(4):
-            if limit_directions[i] == 1:
-                if directions[i] == 'N':
-                    maze = np.vstack((np.zeros(maze.shape[1]), maze))
-                elif directions[i] == 'E':
-                    maze = np.hstack((maze, np.zeros((maze.shape[0], 1))))
-                elif directions[i] == 'S':
-                    maze = np.vstack((maze, np.zeros(maze.shape[1])))
-                elif directions[i] == 'W':
-                    maze = np.hstack((np.zeros((maze.shape[0], 1)), maze))
     
-    global MAZE
-    MAZE = maze
 
 # Configurações iniciais do robô --------------------------------------------------------x
 robot = Robot()
@@ -192,34 +155,5 @@ for sensor in sensores:
     sensor.enable(timestep)
 
 
-move_on_edge('S')
-move_on_edge('S')
-move_on_edge('W');move_on_edge('W')
-move_on_edge('N')
-move_on_edge('E')
-print(probe_for_walls())
-print(MAZE)
-print(position)
-move_on_edge('W')
-move_on_edge('S')
-move_on_edge('E');move_on_edge('E')
-move_on_edge('N');move_on_edge('N')
-print(probe_for_walls())
-print(MAZE)
-print(position)
-move_on_edge('E')
-move_on_edge('S');move_on_edge('S')
-move_on_edge('E');move_on_edge('E')
-move_on_edge('S')
-print(probe_for_walls())
-print(MAZE)
-print(position)
-move_on_edge('N')
-move_on_edge('W');move_on_edge('W')
-move_on_edge('N');move_on_edge('N')
-move_on_edge('W')
-print(probe_for_walls())
-print(MAZE)
-print(position)
 
 
